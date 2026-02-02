@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Medikamenteninventar 79/907</title>
+  <style>
+    :root{
+      --bg:#070812;
+      --panel:#0c0f22;
+      --panel2:#0a0b16;
+      --grid:rgba(0,255,255,.12);
+      --neon:#00f5ff;
+      --neon2:#ff2bd6;
+      --text:#d7f7ff;
+      --muted:#8fb7c4;
+      --red:#ff2a5f;
+      --yellow:#ffd24a;
+      --ok:#2cff9a;
+      --shadow: 0 0 22px rgba(0,245,255,.12), 0 0 44px rgba(255,43,214,.10);
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 600px at 15% 10%, rgba(255,43,214,.16), transparent 60%),
+        radial-gradient(900px 600px at 85% 20%, rgba(0,245,255,.12), transparent 55%),
+        linear-gradient(180deg, #050610, var(--bg));
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      letter-spacing:.2px;
+    }
+
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+      padding:28px 16px 48px;
+    }
+
+    .header{
+      display:flex;
+      gap:16px;
+      align-items:flex-end;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    h1{
+      margin:0;
+      font-size:28px;
+      line-height:1.1;
+      letter-spacing:.6px;
+      text-shadow: 0 0 10px rgba(0,245,255,.25);
+    }
+
+    .subtitle{
+      color:var(--muted);
+      font-size:13px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .chip{
+      border:1px solid rgba(0,245,255,.30);
+      background: rgba(0,245,255,.06);
+      padding:6px 10px;
+      border-radius:999px;
+      box-shadow: 0 0 14px rgba(0,245,255,.10);
+    }
+
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .control{
+      background: linear-gradient(180deg, rgba(12,15,34,.88), rgba(10,11,22,.88));
+      border:1px solid rgba(0,245,255,.22);
+      border-radius:14px;
+      box-shadow: var(--shadow);
+      padding:10px 12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      min-height:44px;
+    }
+
+    label{
+      color:var(--muted);
+      font-size:12px;
+      user-select:none;
+    }
+
+    input[type="search"], select, input[type="date"]{
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(255,43,214,.22);
+      color:var(--text);
+      border-radius:10px;
+      padding:9px 10px;
+      outline:none;
+      min-width: 200px;
+    }
+    input[type="date"]{ min-width: 155px; }
+    select{ min-width: 180px; }
+
+    input[type="search"]::placeholder{ color: rgba(143,183,196,.65); }
+
+    .panel{
+      background:
+        linear-gradient(180deg, rgba(12,15,34,.90), rgba(10,11,22,.92));
+      border:1px solid rgba(0,245,255,.20);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .legend{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(0,245,255,.14);
+      background:
+        linear-gradient(90deg, rgba(0,245,255,.06), rgba(255,43,214,.04));
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color:var(--text);
+      border:1px solid rgba(0,245,255,.18);
+      background: rgba(0,0,0,.20);
+    }
+    .dot{
+      width:10px;height:10px;border-radius:99px;
+      box-shadow: 0 0 12px rgba(255,255,255,.20);
+    }
+    .dot.red{ background: var(--red); box-shadow:0 0 14px rgba(255,42,95,.45); }
+    .dot.yellow{ background: var(--yellow); box-shadow:0 0 14px rgba(255,210,74,.40); }
+    .dot.ok{ background: var(--ok); box-shadow:0 0 14px rgba(44,255,154,.35); }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:14px;
+    }
+    thead th{
+      text-align:left;
+      padding:12px 14px;
+      color:var(--muted);
+      font-weight:600;
+      background:
+        linear-gradient(180deg, rgba(0,245,255,.05), rgba(255,43,214,.03));
+      border-bottom:1px solid rgba(0,245,255,.14);
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+    tbody td{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(0,245,255,.10);
+      vertical-align:top;
+    }
+
+    tbody tr{
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.00), rgba(255,255,255,.00));
+    }
+
+    tbody tr:hover{
+      background:
+        linear-gradient(90deg, rgba(0,245,255,.06), rgba(255,43,214,.04));
+    }
+
+    /* Status-Färbung */
+    tbody tr.expired,
+    tbody tr.expiring-this-month{
+      background:
+        linear-gradient(90deg, rgba(255,42,95,.18), rgba(0,0,0,.00) 70%);
+    }
+    tbody tr.expiring-soon{
+      background:
+        linear-gradient(90deg, rgba(255,210,74,.16), rgba(0,0,0,.00) 70%);
+    }
+
+    .status{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+    .status small{
+      font-weight:600;
+      color:var(--muted);
+      margin-left:6px;
+    }
+
+    .kpi{
+      padding:10px 14px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      border-top:1px solid rgba(0,245,255,.12);
+      background: rgba(0,0,0,.12);
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .glitch{
+      position:relative;
+      display:inline-block;
+      color:var(--text);
+    }
+    .glitch::before, .glitch::after{
+      content:attr(data-text);
+      position:absolute;
+      left:0; top:0;
+      opacity:.65;
+      clip-path: inset(0 0 0 0);
+    }
+    .glitch::before{
+      transform: translate(1px,-1px);
+      color: var(--neon);
+      filter: blur(.3px);
+      mix-blend-mode: screen;
+    }
+    .glitch::after{
+      transform: translate(-1px,1px);
+      color: var(--neon2);
+      filter: blur(.3px);
+      mix-blend-mode: screen;
+    }
+
+    @media (max-width: 720px){
+      thead{ display:none; }
+      table, tbody, tr, td{ display:block; width:100%; }
+      tbody tr{ border-bottom:1px solid rgba(0,245,255,.14); }
+      tbody td{
+        border-bottom:none;
+        padding:10px 14px;
+      }
+      tbody td::before{
+        content: attr(data-label);
+        display:block;
+        color:var(--muted);
+        font-size:12px;
+        margin-bottom:6px;
+      }
+      input[type="search"], select{ min-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="title">
+        <h1><span class="glitch" data-text="Medikamenteninventar 79/907">Medikamenteninventar 79/907</span></h1>
+        <div class="subtitle">
+          <span class="chip">Cyber-Punkt Ansicht</span>
+          <span class="chip">Ampullarium / Schrank / Kühl- & Wärmefach</span>
+          <span class="chip">Highlight: Ablauf-Logik (rot/gelb)</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control">
+          <label for="today">Stichtag</label>
+          <input id="today" type="date" />
+        </div>
+        <div class="control">
+          <label for="search">Suche</label>
+          <input id="search" type="search" placeholder="z.B. Urapidil, RTW, 50mg..." />
+        </div>
+        <div class="control">
+          <label for="filter">Filter</label>
+          <select id="filter">
+            <option value="all">Alle</option>
+            <option value="red">Rot (abgelaufen / diesen Monat)</option>
+            <option value="yellow">Gelb (nächster Monat)</option>
+            <option value="ok">OK (später)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="legend">
+        <span class="badge"><span class="dot red"></span> Rot: abgelaufen oder läuft im Stichtags-Monat ab</span>
+        <span class="badge"><span class="dot yellow"></span> Gelb: läuft innerhalb 1 Monat ab (aber nicht im aktuellen Monat)</span>
+        <span class="badge"><span class="dot ok"></span> OK: läuft später ab</span>
+      </div>
+
+      <div style="overflow:auto; max-height: 70vh;">
+        <table aria-label="Medikamentenliste">
+          <thead>
+            <tr>
+              <th style="min-width:260px;">Name</th>
+              <th style="min-width:200px;">Ort</th>
+              <th style="min-width:90px;">Menge</th>
+              <th style="min-width:140px;">Ablaufdatum</th>
+              <th style="min-width:220px;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="kpi">
+        <div>
+          <span class="mono" id="countAll">0</span> Einträge ·
+          <span class="mono" id="countRed">0</span> rot ·
+          <span class="mono" id="countYellow">0</span> gelb ·
+          <span class="mono" id="countOk">0</span> ok
+        </div>
+        <div class="mono" id="stamp"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---- Daten (aus Excel übernommen) ----
+    // Felder: name, ort, menge, ablauf (YYYY-MM-DD)
+    const meds = [
+      {"name":"Adenosin 6mg/2ml","ort":"RTW Ampullarium","menge":6,"ablauf":"2026-09-30"},
+      {"name":"Amiodaron 150mg/3ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Atropin 0.5mg/1ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-08-31"},
+      {"name":"Atropin 1mg/1ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-11-30"},
+      {"name":"Bactroban","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-09-30"},
+      {"name":"Bisoprolol 5mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-12-31"},
+      {"name":"Cortimyk","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-09-30"},
+      {"name":"Diazepam 10mg/2ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-05-31"},
+      {"name":"Dimetinden 4mg/4ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-11-30"},
+      {"name":"Ebrantil 25mg/5ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Ebrantil 50mg/10ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Erythromycin Augensalbe","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-09-30"},
+      {"name":"Fentanyl 0.5mg/10ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-08-31"},
+      {"name":"Furosemid 20mg/2ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Glyceroltrinitrat 1mg/ml","ort":"RTW Ampullarium","menge":1,"ablauf":"2027-09-30"},
+      {"name":"Heparin 5000I.E./0.2ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-07-31"},
+      {"name":"Hydrocortison 250mg","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Ibuprofen 400mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-11-30"},
+      {"name":"Ipratropiumbromid 0.5mg/2ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2026-11-30"},
+      {"name":"Lidocain 1% 10ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2026-12-31"},
+      {"name":"Lidocain 2% 5ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2026-12-31"},
+      {"name":"Loperamid 2mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-10-31"},
+      {"name":"Midazolam 5mg/5ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-09-30"},
+      {"name":"Morphin 10mg/1ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Naloxon 0.4mg/1ml","ort":"RTW Ampullarium","menge":2,"ablauf":"2026-06-30"},
+      {"name":"NaCl 0.9% 10ml","ort":"RTW Ampullarium","menge":5,"ablauf":"2026-09-30"},
+      {"name":"Nifedipin 5mg/5ml","ort":"RTW Ampullarium","menge":1,"ablauf":"2027-06-30"},
+      {"name":"Nitrospray","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-12-31"},
+      {"name":"Novalgin Tropfen 500mg/ml","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-11-30"},
+      {"name":"Ondansetron 4mg/2ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Pantoprazol 40mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-12-31"},
+      {"name":"Paracetamol 500mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-11-30"},
+      {"name":"Prednisolon 100mg","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Reproterol 0.09mg/2ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2026-11-30"},
+      {"name":"Salbutamol 5mg/2.5ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2026-11-30"},
+      {"name":"Suprarenin 1mg/1ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Tramadol 100mg/2ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-11-30"},
+      {"name":"Urapidil 50mg/10ml","ort":"RTW Ampullarium","menge":1,"ablauf":"2028-01-31"},
+      {"name":"Urapidil 50mg/10ml","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-01-31"},
+      {"name":"Xylocain Gel","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-10-31"},
+
+      {"name":"Glucagon 1mg","ort":"Apothekerschrank","menge":1,"ablauf":"2026-11-30"},
+      {"name":"Humalog 100IE/ml","ort":"Apothekerschrank","menge":1,"ablauf":"2026-12-31"},
+      {"name":"Isoptin 5mg/2ml","ort":"Apothekerschrank","menge":1,"ablauf":"2026-06-30"},
+
+      {"name":"Ketanest S 25mg/5ml","ort":"Wärmefach","menge":3,"ablauf":"2026-10-31"},
+      {"name":"Ketanest S 50mg/10ml","ort":"Wärmefach","menge":3,"ablauf":"2026-10-31"},
+      {"name":"Neostigmin 0.5mg/1ml","ort":"Wärmefach","menge":2,"ablauf":"2026-12-31"},
+      {"name":"Propofol 1% 20ml","ort":"Wärmefach","menge":1,"ablauf":"2026-12-31"},
+      {"name":"Rocuronium 50mg/5ml","ort":"Wärmefach","menge":2,"ablauf":"2026-11-30"},
+      {"name":"Succinylcholin 100mg/2ml","ort":"Wärmefach","menge":1,"ablauf":"2026-10-31"},
+
+      {"name":"Midazolam 5mg/5ml","ort":"Kühlfach","menge":3,"ablauf":"2026-09-30"},
+      {"name":"Morphin 10mg/1ml","ort":"Kühlfach","menge":3,"ablauf":"2026-12-31"},
+      {"name":"Fentanyl 0.5mg/10ml","ort":"Kühlfach","menge":3,"ablauf":"2026-08-31"},
+
+      {"name":"Adenosin 6mg/2ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-09-30"},
+      {"name":"Amiodaron 150mg/3ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-12-31"},
+      {"name":"Atropin 0.5mg/1ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-08-31"},
+      {"name":"Dimetinden 4mg/4ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-11-30"},
+      {"name":"Furosemid 20mg/2ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-12-31"},
+      {"name":"Hydrocortison 250mg","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-12-31"},
+      {"name":"Ketanest S 25mg/5ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-10-31"},
+      {"name":"Ketanest S 50mg/10ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-10-31"},
+      {"name":"Midazolam 5mg/5ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-09-30"},
+      {"name":"Morphin 10mg/1ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-12-31"},
+      {"name":"Naloxon 0.4mg/1ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-06-30"},
+      {"name":"NaCl 0.9% 10ml","ort":"Ampullarium Rucksack","menge":5,"ablauf":"2026-09-30"},
+      {"name":"Ondansetron 4mg/2ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-12-31"},
+      {"name":"Prednisolon 100mg","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-12-31"},
+      {"name":"Reproterol 0.09mg/2ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-11-30"},
+      {"name":"Rocuronium 50mg/5ml","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2026-11-30"},
+      {"name":"Salbutamol 5mg/2.5ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-11-30"},
+      {"name":"Suprarenin 1mg/1ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-12-31"},
+      {"name":"Tramadol 100mg/2ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-11-30"},
+      {"name":"Urapidil 50mg/10ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2028-01-31"},
+      {"name":"Epipen Erwachsen","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2026-08-30"},
+      {"name":"Epipen Kinder","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2026-08-30"},
+      {"name":"Berodualin","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2028-03-31"}
+    ];
+
+    // ---- Hilfsfunktionen ----
+    const pad2 = (n) => String(n).padStart(2,'0');
+    const toISODate = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+
+    function parseISO(iso){
+      // iso = YYYY-MM-DD
+      const [y,m,d] = iso.split('-').map(Number);
+      return new Date(y, m-1, d, 12, 0, 0); // Mittags: vermeidet TZ-Kanten
+    }
+
+    function addMonths(date, n){
+      const d = new Date(date.getTime());
+      const day = d.getDate();
+      d.setMonth(d.getMonth() + n);
+
+      // Falls Monatswechsel das Datum "überrollt" (z.B. 31.), korrigieren:
+      if (d.getDate() < day) d.setDate(0);
+      return d;
+    }
+
+    function sameMonth(a,b){
+      return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+    }
+
+    function classify(expiry, today){
+      // Rot: abgelaufen oder läuft in diesem Monat ab
+      if (expiry < today) return {key:"red", rowClass:"expired", label:"Abgelaufen"};
+      if (sameMonth(expiry, today)) return {key:"red", rowClass:"expiring-this-month", label:"Läuft diesen Monat ab"};
+
+      // Gelb: innerhalb 1 Monat (aber nicht im aktuellen Monat)
+      const limit = addMonths(today, 1);
+      if (expiry <= limit) return {key:"yellow", rowClass:"expiring-soon", label:"Läuft innerhalb 1 Monat ab"};
+
+      return {key:"ok", rowClass:"ok", label:"OK (später)"};
+    }
+
+    function dotClass(key){
+      if (key === "red") return "red";
+      if (key === "yellow") return "yellow";
+      return "ok";
+    }
+
+    // ---- Rendering ----
+    const tbody = document.getElementById('tbody');
+    const elToday = document.getElementById('today');
+    const elSearch = document.getElementById('search');
+    const elFilter = document.getElementById('filter');
+
+    const countAll = document.getElementById('countAll');
+    const countRed = document.getElementById('countRed');
+    const countYellow = document.getElementById('countYellow');
+    const countOk = document.getElementById('countOk');
+    const stamp = document.getElementById('stamp');
+
+    function render(){
+      const today = elToday.value ? parseISO(elToday.value) : new Date();
+      const q = (elSearch.value || "").trim().toLowerCase();
+      const filter = elFilter.value;
+
+      let html = "";
+      let stats = {all:0, red:0, yellow:0, ok:0};
+
+      // Sort: kritisch zuerst (red, yellow, ok), dann Datum
+      const prio = { red:0, yellow:1, ok:2 };
+
+      const rows = meds
+        .map(m => {
+          const exp = parseISO(m.ablauf);
+          const cls = classify(exp, today);
+          return { ...m, exp, cls };
+        })
+        .sort((a,b) => {
+          const da = prio[a.cls.key] - prio[b.cls.key];
+          if (da !== 0) return da;
+          return a.exp - b.exp;
+        })
+        .filter(m => {
+          if (filter !== "all" && m.cls.key !== filter) return false;
+          if (!q) return true;
+          const hay = `${m.name} ${m.ort} ${m.menge ?? ""} ${m.ablauf}`.toLowerCase();
+          return hay.includes(q);
+        });
+
+      for (const m of rows){
+        stats.all++;
+        stats[m.cls.key]++;
+
+        html += `
+          <tr class="${m.cls.rowClass}">
+            <td data-label="Name"><strong>${escapeHtml(m.name)}</strong></td>
+            <td data-label="Ort">${escapeHtml(m.ort || "-")}</td>
+            <td data-label="Menge">${escapeHtml(String(m.menge ?? "-"))}</td>
+            <td data-label="Ablaufdatum" class="mono">${escapeHtml(m.ablauf)}</td>
+            <td data-label="Status">
+              <span class="status">
+                <span class="dot ${dotClass(m.cls.key)}" aria-hidden="true"></span>
+                ${escapeHtml(m.cls.label)}
+                <small class="mono">(${escapeHtml(m.ablauf)})</small>
+              </span>
+            </td>
+          </tr>
+        `;
+      }
+
+      tbody.innerHTML = html || `<tr><td colspan="5" style="padding:16px;color:var(--muted);">Keine Treffer.</td></tr>`;
+
+      countAll.textContent = stats.all;
+      countRed.textContent = stats.red;
+      countYellow.textContent = stats.yellow;
+      countOk.textContent = stats.ok;
+
+      stamp.textContent = `Stichtag: ${toISODate(today)} · Ansicht: ${filter.toUpperCase()} · Suche: "${q || "-"}"`;
+    }
+
+    function escapeHtml(str){
+      return str
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // Default: heutiges Datum (System) setzen
+    (function init(){
+      const now = new Date();
+      elToday.value = toISODate(now);
+      render();
+    })();
+
+    elToday.addEventListener('change', render);
+    elFilter.addEventListener('change', render);
+    elSearch.addEventListener('input', render);
+  </script>
+</body>
+</html>
+
+
