@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Medikamenteninventar 79/907</title>
+
+<style>
+:root{
+  --bg:#0b0d12;
+  --panel:#141722;
+  --header:#1a1e30;
+
+  --cyan:#5ad7ff;
+  --red:#ff2d55;
+  --yellow:#ffd60a;
+  --ok:#2ecc71;
+
+  --text:#eef2f7;
+  --muted:#9aa4b2;
+
+  --red-glow:0 0 18px rgba(255,45,85,.65);
+  --yellow-glow:0 0 16px rgba(255,214,10,.55);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  background:linear-gradient(180deg,#0b0d12,#0f1220);
+  color:var(--text);
+}
+
+.wrapper{max-width:1200px;margin:auto;padding:24px;}
+
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+h1{margin:0;font-size:28px;letter-spacing:.4px;}
+
+.subtitle{
+  margin-top:6px;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.right{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:10px;
+}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end;}
+
+button{
+  background:#1b2033;
+  border:1px solid rgba(255,255,255,.10);
+  padding:12px 14px;
+  font-weight:700;
+  letter-spacing:.6px;
+  color:var(--text);
+  border-radius:12px;
+  cursor:pointer;
+}
+
+button.active{
+  border-color:var(--cyan);
+  box-shadow:0 0 14px rgba(90,215,255,.35);
+}
+
+.pill{
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  color:var(--muted);
+  font-size:12px;
+  text-align:right;
+}
+
+.panel{
+  background:var(--panel);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  overflow:hidden;
+}
+
+.tablewrap{overflow:auto;max-height:72vh;}
+
+table{width:100%;border-collapse:collapse;}
+
+thead{
+  background:var(--header);
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+
+th,td{padding:14px;text-align:left;}
+
+th{font-size:13px;color:var(--muted);letter-spacing:.5px;}
+
+tbody tr{border-bottom:1px solid rgba(255,255,255,.06);}
+
+tbody tr.red{background:rgba(255,45,85,.16);}
+tbody tr.red td{color:#ffdbe3;text-shadow:0 0 6px rgba(255,45,85,.65);}
+
+tbody tr.yellow{background:rgba(255,214,10,.14);}
+tbody tr.yellow td{color:#fff3b0;}
+
+tbody tr.ok td{color:#e5f8ee;}
+
+.dot{
+  width:10px;height:10px;border-radius:50%;
+  display:inline-block;margin-right:8px;
+}
+.dot.red{background:var(--red);box-shadow:var(--red-glow);}
+.dot.yellow{background:var(--yellow);box-shadow:var(--yellow-glow);}
+.dot.ok{background:var(--ok);box-shadow:0 0 12px rgba(46,204,113,.35);}
+
+tfoot td{
+  padding:12px 14px;
+  color:var(--muted);
+  font-size:12px;
+  background:rgba(0,0,0,.12);
+}
+
+@media(max-width:720px){
+  thead{display:none}
+  tr{display:block}
+  td{display:block;padding:10px 14px;}
+  td::before{
+    content:attr(data-label);
+    display:block;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .right{align-items:flex-start}
+  .pill{text-align:left}
+}
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+  <header>
+    <div>
+      <h1>Medikamenteninventar 79/907</h1>
+      <div class="subtitle">Standard: nur kritische (rot/gelb) · Alle: sortiert nach Ablaufdatum (früheste zuerst)</div>
+    </div>
+
+    <div class="right">
+      <div class="pill" id="inventur">Letzte Inventur: —</div>
+      <div class="actions">
+        <button id="btnCritical" class="active">NUR KRITISCHE</button>
+        <button id="btnAll">ALLE MEDIKAMENTE</button>
+        <div class="pill" id="counts">–</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="panel">
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Ort</th>
+            <th>Menge</th>
+            <th>Ablaufdatum</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot>
+          <tr><td colspan="5">Stichtag: <span id="today"></span></td></tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========= Einstellungen ========= */
+const LAST_INVENTORY_DATE = "01.02.2026"; // Datum der letzten Inventur (aus Dateiname 01022026)
+document.getElementById("inventur").textContent = "Letzte Inventur: " + LAST_INVENTORY_DATE;
+
+/* ========= Daten (aus Excel) ========= */
+const meds = [{"name":"Adenosin 6mg/2ml","ort":"RTW Ampullarium","menge":6,"ablauf":"2026-09-30"},{"name":"Amiodaron 150mg/3ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-12-31"},{"name":"Atropin 0.5mg/1ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2026-08-31"},{"name":"Histakut 4mg/4ml","ort":"RTW Ampullarium","menge":2,"ablauf":"2027-02-28"},{"name":"Dibondrin 30mg","ort":"RTW Ampullarium","menge":2,"ablauf":"2030-03-31"},{"name":"Sintetica 50mg/5ml","ort":"RTW Ampullarium","menge":2,"ablauf":"2028-04-30"},{"name":"Ketanest S 250mg/10ml","ort":"RTW Ampullarium","menge":2,"ablauf":"2027-08-31"},{"name":"Anexate","ort":"RTW Ampullarium","menge":1,"ablauf":"2027-06-30"},{"name":"Midazolam 15mg/3ml","ort":"RTW Ampullarium","menge":2,"ablauf":"2028-03-31"},{"name":"Nitro Pohl 10mg/ml","ort":"RTW Ampullarium","menge":6,"ablauf":"2026-10-31"},{"name":"Amoxicillin/Clavulansäure 1g/0.2g","ort":"RTW Ampullarium","menge":1,"ablauf":"2027-01-31"},{"name":"Ceftriaxon 2g","ort":"RTW Ampullarium","menge":1,"ablauf":"2027-04-30"},{"name":"Pantoprazol 40mg","ort":"RTW Ampullarium","menge":3,"ablauf":"2028-02-29"},{"name":"Metoprolol 5mg/5ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2027-10-31"},{"name":"Furosemid 20mg/2ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2027-04-30"},{"name":"Ebrantil 25mg/5ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2027-05-31"},{"name":"Ebrantil 50mg/10ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2027-05-31"},{"name":"Dexamethason 4mg/ml","ort":"RTW Ampullarium","menge":2,"ablauf":"2027-06-30"},{"name":"Theodur retard 200mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2028-06-30"},{"name":"Metamizol 500mg/ml","ort":"RTW Ampullarium","menge":1,"ablauf":"2027-08-31"},{"name":"Aspirin 500mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2028-09-30"},{"name":"Metamizol 1g/2ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2027-04-30"},{"name":"Ondansetron 4mg/2ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2028-01-31"},{"name":"Diazepam 10mg/2ml","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-11-30"},{"name":"Morphin 10mg/1ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2028-01-31"},{"name":"Fentanyl 0.5mg/10ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2027-09-30"},{"name":"Suprarenin 1mg/1ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2027-03-31"},{"name":"Atropin 1mg/1ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2028-06-30"},{"name":"Nitro Spray","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-12-31"},{"name":"Naloxon 0.4mg/1ml","ort":"RTW Ampullarium","menge":3,"ablauf":"2028-01-31"},{"name":"Prednisolon 100mg","ort":"RTW Ampullarium","menge":3,"ablauf":"2028-04-30"},{"name":"Heparin 5000IE/0.2ml","ort":"RTW Ampullarium","menge":2,"ablauf":"2027-01-31"},{"name":"Clopidogrel 75mg","ort":"RTW Ampullarium","menge":8,"ablauf":""},{"name":"Ipratropiumbromid 0.5mg/2ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2027-06-30"},{"name":"Salbutamol 5mg/2.5ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2027-05-31"},{"name":"Reproterol 0.09mg/2ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2027-06-30"},{"name":"NaCl 0.9% 10ml","ort":"RTW Ampullarium","menge":5,"ablauf":"2028-08-31"},{"name":"Lidocain 1% 10ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2028-09-30"},{"name":"Lidocain 2% 5ml","ort":"RTW Ampullarium","menge":4,"ablauf":"2028-09-30"},{"name":"Ammolyt","ort":"RTW Ampullarium","menge":1,"ablauf":"2027-11-30"},{"name":"Bactroban","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-09-30"},{"name":"Xylocain Gel","ort":"RTW Ampullarium","menge":1,"ablauf":"2028-03-31"},{"name":"Cortimyk","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-09-30"},{"name":"Erythromycin Augensalbe","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-09-30"},{"name":"Loperamid 2mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-10-31"},{"name":"Paracetamol 500mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2027-10-31"},{"name":"Ibuprofen 400mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2027-06-30"},{"name":"Bisoprolol 5mg","ort":"RTW Ampullarium","menge":1,"ablauf":"2026-12-31"},{"name":"Glucagon 1mg","ort":"Apothekerschrank","menge":1,"ablauf":"2026-11-30"},{"name":"Humalog 100IE/ml","ort":"Apothekerschrank","menge":1,"ablauf":"2026-12-31"},{"name":"Isoptin 5mg/2ml","ort":"Apothekerschrank","menge":1,"ablauf":"2026-06-30"},{"name":"Ketanest S 25mg/5ml","ort":"Wärmefach","menge":3,"ablauf":"2026-10-31"},{"name":"Ketanest S 50mg/10ml","ort":"Wärmefach","menge":3,"ablauf":"2026-10-31"},{"name":"Neostigmin 0.5mg/1ml","ort":"Wärmefach","menge":2,"ablauf":"2027-09-30"},{"name":"Propofol 1% 20ml","ort":"Wärmefach","menge":1,"ablauf":"2026-10-31"},{"name":"Rocuronium 50mg/5ml","ort":"Wärmefach","menge":2,"ablauf":"2027-10-31"},{"name":"Succinylcholin 100mg/2ml","ort":"Wärmefach","menge":1,"ablauf":"2026-10-31"},{"name":"Midazolam 5mg/5ml","ort":"Kühlfach","menge":3,"ablauf":"2026-09-30"},{"name":"Morphin 10mg/1ml","ort":"Kühlfach","menge":3,"ablauf":"2028-01-31"},{"name":"Fentanyl 0.5mg/10ml","ort":"Kühlfach","menge":3,"ablauf":"2027-09-30"},{"name":"Adenosin 6mg/2ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-09-30"},{"name":"Amiodaron 150mg/3ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-12-31"},{"name":"Atropin 0.5mg/1ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-08-31"},{"name":"Histakut 4mg/4ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-02-28"},{"name":"Nitro Pohl 10mg/ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2026-10-31"},{"name":"Metoprolol 5mg/5ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-10-31"},{"name":"Furosemid 20mg/2ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-04-30"},{"name":"Ebrantil 50mg/10ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-05-31"},{"name":"Dexamethason 4mg/ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-06-30"},{"name":"Midazolam 15mg/3ml","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2028-03-31"},{"name":"Morphin 10mg/1ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2028-01-31"},{"name":"Fentanyl 0.5mg/10ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-09-30"},{"name":"Suprarenin 1mg/1ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-03-31"},{"name":"Naloxon 0.4mg/1ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2028-01-31"},{"name":"Prednisolon 100mg","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2028-04-30"},{"name":"Ipratropiumbromid 0.5mg/2ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-06-30"},{"name":"Salbutamol 5mg/2.5ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-05-31"},{"name":"Reproterol 0.09mg/2ml","ort":"Ampullarium Rucksack","menge":2,"ablauf":"2027-06-30"},{"name":"NaCl 0.9% 10ml","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2028-06-30"},{"name":"Midazolam-hameln15mg/3mg","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2027-04-30"},{"name":"Epipen Erwachsen","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2026-08-30"},{"name":"Epipen Kinder","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2026-08-30"},{"name":"Berodualin","ort":"Ampullarium Rucksack","menge":1,"ablauf":"2028-03-31"}];
+
+/* ========= UI / Logik ========= */
+const tbody = document.getElementById("tbody");
+const btnCritical = document.getElementById("btnCritical");
+const btnAll = document.getElementById("btnAll");
+const countsEl = document.getElementById("counts");
+const todayEl = document.getElementById("today");
+
+let mode = "critical"; // "critical" | "all"
+const today = new Date();
+todayEl.textContent = today.toISOString().slice(0,10);
+
+function sameMonth(a,b){
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth();
+}
+function addMonths(d,m){
+  const x=new Date(d);
+  const day=x.getDate();
+  x.setMonth(x.getMonth()+m);
+  if(x.getDate()<day) x.setDate(0);
+  return x;
+}
+function parseExpiry(iso){
+  if(!iso || typeof iso !== "string") return null;
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return null;
+  return new Date(+m[1], +m[2]-1, +m[3], 12, 0, 0);
+}
+function classify(m){
+  const exp = parseExpiry(m.ablauf);
+  if(!exp) return {cls:"red", dot:"red", text:"DATUM FEHLT / PRÜFEN", exp:null};
+
+  if(exp < today || sameMonth(exp, today)){
+    return {cls:"red", dot:"red", text: exp < today ? "ABGELAUFEN" : "LÄUFT DIESEN MONAT AB", exp};
+  }
+  if(exp <= addMonths(today, 1)){
+    return {cls:"yellow", dot:"yellow", text:"LÄUFT INNERHALB 1 MONAT AB", exp};
+  }
+  return {cls:"ok", dot:"ok", text:"OK", exp};
+}
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/* Sortierung:
+   - mode === "all": Ablaufdatum ASC (früheste zuerst), fehlende Daten ans Ende
+   - mode === "critical": rot vor gelb, jeweils nach Ablaufdatum ASC (fehlende Daten ans Ende)
+*/
+function sortForAll(a,b){
+  const ta = a._cls.exp ? a._cls.exp.getTime() : Number.POSITIVE_INFINITY;
+  const tb = b._cls.exp ? b._cls.exp.getTime() : Number.POSITIVE_INFINITY;
+  if(ta !== tb) return ta - tb;
+  return a.name.localeCompare(b.name, "de");
+}
+function sortForCritical(a,b){
+  const prio = { red:0, yellow:1, ok:2 };
+  const pa = prio[a._cls.cls] ?? 9;
+  const pb = prio[b._cls.cls] ?? 9;
+  if(pa !== pb) return pa - pb;
+  return sortForAll(a,b);
+}
+
+function render(){
+  tbody.innerHTML = "";
+
+  const enriched = meds.map(m => ({...m, _cls: classify(m)}));
+
+  // counts über ALLE
+  let red=0,yellow=0,ok=0;
+  for(const x of enriched){
+    if(x._cls.cls==="red") red++;
+    else if(x._cls.cls==="yellow") yellow++;
+    else ok++;
+  }
+  countsEl.textContent = `${enriched.length} gesamt · ${red} rot · ${yellow} gelb · ${ok} ok`;
+
+  let shown;
+  if(mode === "all"){
+    shown = enriched.slice().sort(sortForAll);
+  } else {
+    shown = enriched.filter(x => x._cls.cls !== "ok").sort(sortForCritical);
+  }
+
+  if(mode === "critical" && shown.length === 0){
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr class="ok">
+        <td colspan="5" style="padding:16px;color:var(--muted);">
+          Keine kritischen Abläufe (rot/gelb) im aktuellen Zeitraum.
+          Klick auf <strong>ALLE MEDIKAMENTE</strong>, um das komplette Inventar zu sehen.
+        </td>
+      </tr>
+    `);
+    return;
+  }
+
+  for(const m of shown){
+    const s = m._cls;
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr class="${s.cls}">
+        <td data-label="Name">${escapeHtml(m.name)}</td>
+        <td data-label="Ort">${escapeHtml(m.ort)}</td>
+        <td data-label="Menge">${escapeHtml(String(m.menge))}</td>
+        <td data-label="Ablaufdatum">${escapeHtml(m.ablauf || "—")}</td>
+        <td data-label="Status"><span class="dot ${s.dot}"></span>${escapeHtml(s.text)}</td>
+      </tr>
+    `);
+  }
+}
+
+/* Button-Handling (zwei Buttons, kein Toggle) */
+btnCritical.addEventListener("click", () => {
+  mode = "critical";
+  btnCritical.classList.add("active");
+  btnAll.classList.remove("active");
+  render();
+});
+
+btnAll.addEventListener("click", () => {
+  mode = "all";
+  btnAll.classList.add("active");
+  btnCritical.classList.remove("active");
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
